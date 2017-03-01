@@ -1,0 +1,184 @@
+---
+title: "3rd Model DeepLearning with h2o"
+author: "Seema Rani Kanuri"
+date: "December 10, 2016"
+output: html_document
+---
+#Model : 3
+
+## Introduction : Allstate Claims Severity
+We aspire to demonstrate insight into better ways to predict claims severity for the chance to be part of Allstate’s efforts to ensure a worry-free customer experience.
+
+### Goal:
+The Goal is to predict the loss based on the severity of the claim using the H2O's Deep Learning method. 
+
+### Task:
+We have to predict the cost and the severity claim of the Allstate, a personal insurer in the United States.
+
+
+```{r setup, warning=F, results='hide'}
+set.seed(0) #  setting a seed will ensure reproducible results (not R's seed)
+train<-read.csv('F:/OneDrive - Texas Tech University/MastersDocuments/DS- Multivariate Analysis/Allstate/train.csv')
+test<-read.csv('F:/OneDrive - Texas Tech University/MastersDocuments/DS- Multivariate Analysis/Allstate/test.csv')
+```
+
+## Introduction to the Data
+Each row in this dataset represents an insurance claim. You must predict the value for the ‘loss’ column. Variables prefaced with ‘cat’ are categorical, while those prefaced with ‘cont’ are continuous.(source:https://www.kaggle.com/c/allstate-claims-severity)
+
+### File descriptions:
+There are no missing values in the dataset.
+
+train.csv - the training set
+test.csv - the test set. You must predict the loss value for the ids in this file.
+sample_submission.csv - a sample submission file in the correct format
+
+
+```{r h2o-cluster, warning=F, echo=FALSE}
+#str(train)
+#str(test)
+head(train[1:10])
+sum(is.na(train)) 
+sum(is.na(test))
+```
+
+### The data & Model
+Lets look at 25 rows:
+
+id
+116 categorical features
+14 continuous features
+Loss (label to predict)
+
+```{r}
+train<-train[,-1]
+test_label<-test[,1]
+test<-test[,-1]
+```
+
+## Initialization
+
+First, we will create three splits for train/test/valid independent data sets.We will train a data set on one set and use the others to test the validity of model by ensuring that it can predict accurately on data the model has not been shown.
+
+```{r}
+index_df<-sample(1:(dim(train)[1]), 0.2*dim(train)[1], replace=FALSE)
+train_index<-train[-index_df,]
+valid_index<-train[index_df,]
+```
+
+The second set will be used for validation most of the time. The third set will be withheld until the end, to ensure that our validation accuracy is consistent with data we have never seen during the iterative process. 
+
+```{r}
+train_index[,ncol(train_index)]<-log(train_index[,ncol(train_index)])
+valid_index[,ncol(train_index)]<-log(valid_index[,ncol(valid_index)])
+```
+
+## Setting Up and Connecting to a H2O Cluster
+
+Let’s first load some packages
+
+```{r}
+# H2O is an R package
+library(h2o)
+
+# Create an H2O cloud 
+h20package<-h2o.init(
+  nthreads=-1,            #use available threads
+  max_mem_size = "16G")   # specify the memory size for the H2O cloud
+
+h2o.removeAll() ## clean slate - just in case the cluster was already running
+```
+
+
+Assign the first result the R variable train and the H2O name train.hex
+
+```{r  , warning=F, results='hide'}
+train_index.hex<-as.h2o(train_index)
+valid_index.hex<-as.h2o(valid_index)  # R valid, H2O valid.hex
+test.hex<-as.h2o(test)
+```
+
+
+## Run our predictive model, Training a h2o Deep Learning Model
+## Deep learning algorithm in h2o for prediction
+
+```{r , warning=F, results='hide'}
+
+h2oDeepLearning_Model<-h2o.deeplearning(                                     # data in H2O format
+                                 x=1:(ncol(train_index.hex)-1), 
+                                 y=ncol(train_index.hex), 
+                                 activation = "TanhWithDropout",  
+                                 input_dropout_ratio = 0.2, # % of inputs dropout
+                                 hidden_dropout_ratios = c(0.5,0.5,0.5), # % for nodes dropout
+                                 training_frame=train_index.hex, 
+                                 validation_frame=valid_index.hex,
+		                             epochs=1000, 
+                                 hidden=c(1280,1280,1280),       # more hidden layers -> more complex interactions
+                                 stopping_tolerance=1e-2,        # stop when validation logloss does not improve by >=1% for 2 scoring events
+                                 stopping_rounds=2,
+                                 score_validation_samples=10000, # downsample validation set for faster scoring
+                                 score_duty_cycle=0.025,         # don't score more than 2.5% of the wall time
+                                 adaptive_rate=F,                # manually tuned learning rate
+                                 rate=0.01, 
+                                 rate_annealing=2e-6,            
+                                 momentum_start=0.2,             # manually tuned momentum
+                                 momentum_stable=0.4, 
+                                 momentum_ramp=1e7, 
+                                 l1=1e-5,                        # add some L1/L2 regularization
+                                 l2=1e-5,
+                                 max_w2=10                       # helps stability for Rectifier
+		                            )
+
+```
+
+
+##  View information about the model.
+Keys to look for are validation performance and variable importance
+
+```{r}
+summary(h2oDeepLearning_Model)                                                 ## View information about the model.
+```
+
+## Using the model for prediction
+
+```{r}
+Prediction<-(as.matrix(predict(h2oDeepLearning_Model, test.hex)))
+Predicted_Values<-exp((Prediction)/2)
+```
+
+## Generate the submission.
+
+```{r}
+
+Prediction_df = as.data.frame(Predicted_Values)
+Prediction_df = data.frame(ImageId = seq(1,length(Prediction_df$predict)), Label = Prediction_df$predict)
+write.csv(Prediction_df, file = "F:/OneDrive - Texas Tech University/MastersDocuments/DS- Multivariate Analysis/Allstate/3-Deeplearning-h2o.csv", row.names=F)
+```
+
+### All done, shutdown H2O    
+
+```{r}
+h2o.shutdown(prompt=FALSE)
+```
+
+
+## Conclusion
+
+
+I tried of using Python but end up struggling a long time installing few packages like `TensorFlow` and ` Keras` and I spend vertually a long time on setting the framework for the required packages.So like last time, again I end up doing my project using R.
+
+However R seems to be an easy choice where I was able to do the analysis in a quick time. To train the data I have used 3 hidden layers Deep Learning algorithms with each of 1280 nodes and an epoch of 1000 using the `h2o` package on a subset lof data which lasted for longer than 80 minutes. 
+
+Apart from   3 hidden layers Deep Learning algorithms  using the `h2o` package, I alos tried `h20 GBM algorithms` and ` h2o.randomForest algorithms`.
+However the best accuracy I got is with 3 hidden layers Deep Learning algorithms with each of 1280 nodes with leadership Board score of 1114.35807'
+
+I have produced 3 different output files for the loss values to show how predicting a loss value correctly can enchance overall claims experience for the customer as well as the Insurance company. These output files are produced using 3 different models  :-
+
+### 3_deeplearning-h2o.csv (produced by using the h20 Deep Learning algorithms)
+### 2_GBM-h2o.csv (produced by using the h20 GBM algorithms)
+### 1_RF-h2o.csv (produced by using the h20 Random Forest algorithms)
+
+## Resources
+
+[Deep Learning with H2O](https://www.r-bloggers.com/things-to-try-after-user-part-1-deep-learning-with-h2o/)
+[Package ‘h2o’](https://cran.r-project.org/web/packages/h2o/h2o.pdf)
+[h2o-tutorials](https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/deeplearning)

@@ -1,0 +1,196 @@
+---
+title: "1st Model with h2o.randomForest"
+author: "Seema Rani Kanuri"
+date: "December 10, 2016"
+output: html_document
+---
+#Model : 1
+
+## Introduction : Allstate Claims Severity
+We aspire to demonstrate insight into better ways to predict claims severity for the chance to be part of Allstate’s efforts to ensure a worry-free customer experience.
+
+### Goal:
+The Goal is to predict the loss based on the severity of the claim using the  h2o.randomForest method. 
+
+### Task:
+We have to predict the cost and the severity claim of the Allstate, a personal insurer in the United States.
+
+
+```{r setup, warning=F, results='hide'}
+set.seed(0) #  setting a seed will ensure reproducible results (not R's seed)
+
+
+train<-read.csv('F:/OneDrive - Texas Tech University/MastersDocuments/DS- Multivariate Analysis/Allstate/train.csv')
+test<-read.csv('F:/OneDrive - Texas Tech University/MastersDocuments/DS- Multivariate Analysis/Allstate/test.csv')
+```
+
+## Introduction to the Data
+Each row in this dataset represents an insurance claim. You must predict the value for the ‘loss’ column. Variables prefaced with ‘cat’ are categorical, while those prefaced with ‘cont’ are continuous.(source:https://www.kaggle.com/c/allstate-claims-severity)
+
+### File descriptions:
+There are no missing values in the dataset.
+
+train.csv - the training set
+test.csv - the test set. You must predict the loss value for the ids in this file.
+sample_submission.csv - a sample submission file in the correct format
+
+
+```{r h2o-cluster, warning=F, echo=FALSE}
+#str(train)
+#str(test)
+head(train[1:10])
+sum(is.na(train)) 
+sum(is.na(test))
+```
+
+### The data & Model
+Lets look at 25 rows:
+
+id
+116 categorical features
+14 continuous features
+Loss (label to predict)
+
+```{r}
+train<-train[,-1]
+test_label<-test[,1]
+test<-test[,-1]
+```
+
+## Initialization
+
+First, we will create three splits for train/test/valid independent data sets.We will train a data set on one set and use the others to test the validity of model by ensuring that it can predict accurately on data the model has not been shown.(source:https://www.rdocumentation.org/packages/h2o/versions/3.10.0.8/topics/h2o.randomForest)
+
+```{r}
+index_df<-sample(1:(dim(train)[1]), 0.2*dim(train)[1], replace=FALSE)
+train_index<-train[-index_df,]
+valid_index<-train[index_df,]
+```
+
+The second set will be used for validation most of the time. The third set will be withheld until the end, to ensure that our validation accuracy is consistent with data we have never seen during the iterative process. 
+
+```{r}
+
+train_index[,ncol(train_index)]<-log(train_index[,ncol(train_index)])
+valid_index[,ncol(train_index)]<-log(valid_index[,ncol(valid_index)])
+```
+
+## Setting Up and Connecting to a H2O Cluster
+lLet’s first load some packages
+
+```{r}
+# H2O is an R package
+library(h2o)
+
+# Create an H2O cloud 
+h2oPackage<-h2o.init(
+  nthreads=-1,            #use available threads
+  max_mem_size = "16G")   # specify the memory size for the H2O cloud
+
+h2o.removeAll() ## clean slate - just in case the cluster was already running
+
+```
+
+#Import the data into H2O
+Everything is scalable and distributed from now on. All processing is done on the fully multi-threaded and distributed H2O Java-based backend and can be scaled to large datasets on large compute clusters.
+Assign the first result the R variable train and the H2O name train.hex
+
+```{r  hide}
+train_index.hex<-as.h2o(train_index)
+valid_index.hex<-as.h2o(valid_index)  # R valid, H2O valid.hex
+test.hex<-as.h2o(test)
+```
+
+
+## run our predictive model, Training a h2o.randomForest Model
+
+```{r , warning=F, results='hide'}
+##Good old Random Forest
+
+h2oRandomForest_Model<-h2o.randomForest(                         ##  h2o.randomForest function
+                           x=1:(ncol(train_index.hex)-1),        ##  the predictor columns, by column index_df
+                           y=ncol(train_index.hex),              ##  the target index_df (what we are predicting)
+	                         training_frame=train_index.hex,       ##  the H2O frame for training
+	                         validation_frame=valid_index.hex,     ##  the H2O frame for validation     
+		                       ntrees=200,                           ##  use a maximum of 200 trees to create the
+                                                                 ##  random forest model. The default is 200.
+                                                                 ##  I have increased it because I will let 
+                                                                 ##  the early stopping criteria decide when
+                                                                 ##  the random forest is sufficiently accurate
+		                       stopping_rounds = 200,                ##  Stop fitting new trees when the 200-tree
+                           stopping_tolerance = 1e-2,            ##  average is within 0.001 (default) of 
+                                                                 ##  the prior two 2-tree averages.
+                                                                 ##  Can be thought of as a convergence setting
+		                       #score_each_iteration = T,            ##  Predict against training and validation for
+                                                                 ##  each tree. Default will skip several.
+                           #seed = 1000,                         ##  Set the random seed so that this can be
+                                                                 ##  reproduced
+                           max_depth = 20,                       ##  Increase depth, from 20
+                           score_each_iteration = T,             
+                           seed=30000  
+                           )
+
+```
+
+##  View information about the model.
+Keys to look for are validation performance and variable importance
+
+```{r}
+summary(h2oRandomForest_Model)                                                
+```
+
+A more direct way to access the validation Metrics. Performance metrics depend on the type of model being built. With a multinomial classification, we will primarily look at the confusion matrix, and overall accuracy via hit_ratio @ k=1.
+
+```{r}
+h2oRandomForest_Model@model$validation_metrics                          
+```
+
+## Using the model for prediction
+
+```{r}
+
+Prediction<-(as.matrix(predict(h2oRandomForest_Model, test.hex)))
+Prediction_values<-exp((Prediction)/2)
+```
+
+
+```{r}
+Prediction_df = as.data.frame(Prediction_values)
+Prediction_df = data.frame(ImageId = seq(1,length(Prediction_df$predict)), Label = Prediction_df$predict)
+write.csv(Prediction_df, file = "F:/OneDrive - Texas Tech University/MastersDocuments/DS- Multivariate Analysis/Allstate/1-RandomForest-h2o.csv", row.names=F)
+
+```
+
+### All done, shutdown H2O    
+
+```{r}
+h2o.shutdown(prompt=FALSE)
+```
+
+
+
+## Conclusion
+
+
+I tried of using Python but end up struggling a long time installing few packages like `TensorFlow` and ` Keras` and I spend vertually a long time on setting the framework for the required packages.So like last time, again I end up doing my project using R.
+
+However R seems to be an easy choice where I was able to do the analysis in a quick time. To train the data I have used 3 hidden layers Deep Learning algorithms with each of 1280 nodes and an epoch of 1000 using the `h2o` package on a subset lof data which lasted for longer than 80 minutes. 
+
+Apart from   3 hidden layers Deep Learning algorithms  using the `h2o` package, I alos tried `h20 GBM algorithms` and `h20 Random Forest algorithms`. Using ` h2o.randomForest algorithms` best accuracy I got is with leadership Board score of 1258.369.
+
+However the best accuracy I got is with 3 hidden layers Deep Learning algorithms with each of 1280 nodes with leadership Board score of 1114.3580.
+
+I have produced 3 different output files for the loss values to show how predicting a loss value correctly can enchance overall claims experience for the customer as well as the Insurance company. These output files are produced using 3 different models  :-
+
+### 3_deeplearning-h2o.csv (produced by using the h20 Deep Learning algorithms)
+### 2_GBM-h2o.csv (produced by using the h20 GBM algorithms)
+### 1_RF-h2o.csv (produced by using the h20 Random Forest algorithms)
+
+
+## Resources
+
+[Build A Big Data Random Forest Model](https://www.rdocumentation.org/packages/h2o/versions/3.10.0.8/topics/h2o.randomForest)
+
+[https://www.analyticsvidhya.com/blog/2016/05/h2o-data-table-build-models-large-data-sets/](https://www.analyticsvidhya.com/blog/2016/05/h2o-data-table-build-models-large-data-sets/)
+
+[Diving into H2O](https://www.r-bloggers.com/diving-into-h2o/)

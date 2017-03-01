@@ -3,23 +3,23 @@
 # Problem Discussion
   In a serious car accident, I focus on the things that matter the most: family, friends, and other loved ones. At that point in time     pushing paper or opening a claim with insurance agent is the last thing I want. Our aim to develop a project for Allstate, a personal   insurer in the United States to predict the cost and severity of claims and eventually improve the claims service to ensure a worry-     free customer experience (source: https://www.kaggle.com/c/allstate-claims-severity). The data for this project have been downloaded     from Kaggle. The final submission will be based on following:
 
-  	Mean Absolute Error(MAE) between the predicted loss and the actual loss
-  	Predicting the cost and severity of claims
-  	For every id in the test set, predicting the loss value
-  	Improve claims service
+  Mean Absolute Error(MAE) between the predicted loss and the actual loss
+  Predicting the cost and severity of claims
+  For every id in the test set, predicting the loss value
+  Improve claims service
 
 # Significance
   I aspire to demonstrate insight into better ways to predict claims severity for the chance to be part of Allstate’s efforts to ensure   a worry-free customer experience. The goal is to predict the loss based on the severity of the claims. By doing this in my opinion       will enhance overall customer service which will be beneficial for the company as well as the claimant plus help the insurance           company. The predictive model that I developed can help in 2 ways: -
-  	Recognition of potentially fraudulent claims
-  	Identification of potentially high value losses
-  	Effective way to root out claim volatility
-  	Preventable causes - such as inefficient processing, human error, outdated operational procedures and fraud.
-  	Early identification of claims with the potential for high leakage, thereby allowing for proactive management of the claim.
-  	Timely allocation of resources.
-  	Reserving /settlement values
+  Recognition of potentially fraudulent claims
+  Identification of potentially high value losses
+  Effective way to root out claim volatility
+  Preventable causes - such as inefficient processing, human error, outdated operational procedures and fraud.
+  Early identification of claims with the potential for high leakage, thereby allowing for proactive management of the claim.
+  Timely allocation of resources.
+  Reserving /settlement values
 
 # Exploratory Analysis
-  3.1	Data Understanding
+  Data Understanding
   The datasets I used in our project came from an on-going Kaggle(source: https://www.kaggle.com/c/allstate-claims-severity/data)         competition. Each row in this dataset represents an insurance claim. 
 
   train.csv - the training set
@@ -27,11 +27,11 @@
   sample_submission.csv - a sample submission file in the correct format
 
 
-  3.2	Data Preparation and Feature identification
+  Data Preparation and Feature identification
   I should predict the value for the ‘loss’ column. Variables prefaced with ‘cat’ are categorical, while those prefaced with ‘cont’ are   continuous. All ids are of 116 categorical features, 14 continuous features Loss (label to predict).
 
 
-  3.3	Missing Values
+  Missing Values
   Considering the datasets this shows that the dataset is complete and there is no need of doing to clean it from empty entries’. there   is no Null value of feature shape, texture and margin in the given dataset.
 
 
@@ -44,22 +44,22 @@
 
   I have produced 4 different output files for the loss values to show how predicting a loss value correctly can enhance overall claims   experience for the customer as well as the Insurance company. These output files are produced using 4 different models: -
 
-  	h20 Deep Learning algorithm using R
-  	h20 GBM algorithm using R
-  	h20 Random Forest algorithm using R
-  	Gradient Boosting Regression algorithm using python
+  h20 Deep Learning algorithm using R
+ 	h20 GBM algorithm using R
+  h20 Random Forest algorithm using R
+  Gradient Boosting Regression algorithm using python
 
 
 # Formulation / Libraries
 
  I have used several libraries to analyze and explore the data which are as follow:
 
- 5.1	 H2O cluster
- 5.2	cv2
- 5.3	Numpy
- 5.4	Pandas
- 5.5	Label Encoder
- 5.6	StandardScaler
+ H2O cluster
+ cv2
+ Numpy
+ Pandas
+ Label Encoder
+ StandardScaler
 
 # Model Performance
 
@@ -81,22 +81,27 @@
  
 # Limitations
 
- 8.1	Process Time
+ Process Time
  Each model took a lot of time to process the execution which has certainly became a drawback because of which I couldn’t make more hit   and trails to the exiting model’s.
 
- 7.2	Complexity
+ Complexity
  Most of the data was categorical which limits the usage of the models however I have changed into numeric values but that didn’t show     much improvement in the performance and model accuracy. 
 
- 7.3	Kaggle Limitations
+ Kaggle Limitations
  I have limited upload of the submission file as due to which much more experiments are limited.
 
 # Learning
 
-  	I have got the more exposure to various algorithms and classifiers, I have learned how to tune parameters.
-  	Understood how the GBM algorithm and Random Forest algorithm(model) works. Now I feel that the GBM is close to the initial random forest models in their performance. However, I used a default random forest. 
-  	Random forest's primary strength is how well it runs with standard parameters. And while there are only a few parameters to tune, I can experiment with those to see if it will make a difference. The main parameters to tune are the tree depth. 
-  	While H2O Deep Learning has many parameters, it was designed to be just as easy to use as the other supervised training methods in H2O. 
-  	Also one remarkable observation was that with the early stopping, automatic data standardization and handling of categorical variables and missing values and adaptive learning rates (per weight) reduce the number of parameters to specify. 
-  	And also it's just the number and sizes of hidden layers, the number of epochs and the activation function can be tuned to get better accuracy.
+  I have got the more exposure to various algorithms and classifiers, I have learned how to tune parameters.
+  
+  Understood how the GBM algorithm and Random Forest algorithm(model) works. Now I feel that the GBM is close to the initial random forest models in their performance. However, I used a default random forest. 
+  
+  Random forest's primary strength is how well it runs with standard parameters. And while there are only a few parameters to tune, I can experiment with those to see if it will make a difference. The main parameters to tune are the tree depth. 
+  
+  While H2O Deep Learning has many parameters, it was designed to be just as easy to use as the other supervised training methods in H2O.
+  
+  Also one remarkable observation was that with the early stopping, automatic data standardization and handling of categorical variables and missing values and adaptive learning rates (per weight) reduce the number of parameters to specify. 
+  
+  And also it's just the number and sizes of hidden layers, the number of epochs and the activation function can be tuned to get better accuracy.
 
 

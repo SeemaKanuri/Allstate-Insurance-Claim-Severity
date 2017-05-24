@@ -104,4 +104,3 @@
   
   And also it's just the number and sizes of hidden layers, the number of epochs and the activation function can be tuned to get better accuracy.
 
-

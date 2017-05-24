@@ -102,5 +102,4 @@
   
   Also one remarkable observation was that with the early stopping, automatic data standardization and handling of categorical variables and missing values and adaptive learning rates (per weight) reduce the number of parameters to specify. 
   
-  And also it's just the number and sizes of hidden layers, the number of epochs and the activation function can be tuned to get better accuracy.
-
+  Another point, it's just the number and sizes of hidden layers, the number of epochs and the activation function can be tuned to get better accuracy.
